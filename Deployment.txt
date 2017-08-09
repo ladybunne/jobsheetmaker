@@ -1,0 +1,33 @@
+Deployment notes for JobsheetMaker
+By Rowan Walker
+Created on 2017-01-16
+Last updated on 2017-04-04
+
+1. Requirements
+---------------
+
+This version of JobsheetMaker requires the latest version of Java. As of
+writing this document, the latest version is Java 8 update 112. Java will
+automatically prompt to update on any computer it is installed on, so ensuring
+the latest version of Java is installed is relatively straightforward.
+
+2. Deployment
+-------------
+
+To deploy JobsheetMaker, perform the following steps:
+
+    - Unzip the provided archive containing JobsheetMaker and its files.
+    - Copy the resulting directory to a location where users can access it (i.e.
+      a network drive).
+    - Show users where the directory can be located.
+
+3. Usage
+--------
+
+Users can find instructions on how to use JobsheetMaker by locating
+"Manual.docx" in the deployment directory.
+
+4. Contact
+----------
+
+If you have any questions, please email Rowan at <rowan.walker1@gmail.com>.

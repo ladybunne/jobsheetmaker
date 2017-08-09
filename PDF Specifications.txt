@@ -1,0 +1,61 @@
+PDF specifications for JobsheetMaker - CLI version 1.0
+By Rowan Walker
+Created on 2017-01-16
+Last updated on 2017-01-27
+
+1. Overview
+-----------
+
+This document aims to serve as a technical speficiation for the PDF templates
+and their usage.
+
+2. Templates
+------------
+
+There are two PDFs that come with JobsheetMaker:
+
+    - "Day Overview Template.pdf", used for the overview coversheet
+    - "Single Job Template.pdf", used for each individual job sheet
+
+As of the final submission they are included within the program file itself. 
+
+Both templates contain a number of named fields that correspond to where the
+data is placed during runtime. The name of the field is the sole determinant
+of its corresponding data; in other words, the system is "template-agnostic" -
+it does not care how the templates look, only that they have fields with the
+expected names present.
+
+This means that the existing templates may be replaced by custom ones, as long
+as the new templates contain the right fields and field names.
+
+3. Day Overview Template fields
+-------------------------------
+
+Here is a list of the fields and expected data present in "Day Overview
+Template.pdf":
+
+    - "Title": "Day Overview for ${worker.name}, ${job.date}"
+    - "Client": "${client.name}"
+    - "Contact": "${client.phone}"
+    - "Address": "${client.address}"
+    - "Services": "${job.services}"
+    - "Comments": "${job.comments}"
+
+4. Single Job Template fields
+-----------------------------
+
+Here is a list of the fields and expected data present in "Single Job
+Template.pdf":
+
+    - "Title": "${client.name} - ${job.services} on ${job.date}"
+    - "Client": "${client.name}"
+    - "Contact": "${client.phone}"
+    - "Confirmed": "${job.confirmed}"
+    - "Address": "${client.address}"
+    - "Comments": "${job.comments}"
+    - "Duration": "${job.duration}"
+
+5. Contact
+----------
+
+If you have any questions, please email Rowan at <rowan.walker1@gmail.com>.
