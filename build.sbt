@@ -1,5 +1,3 @@
-import Dependencies._
-
 lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
@@ -10,9 +8,6 @@ lazy val root = (project in file(".")).
     name := "core",
     fork := true,
     mainClass in Compile := Some("com.archmage.jobsheetmaker.MainApp"),
-    mainClass in assembly := Some("com.archmage.jobsheetmaker.MainApp"),
-    assemblyJarName in assembly := "JobsheetMaker.jar",
-    libraryDependencies += scalaTest % Test,
     libraryDependencies += "com.opencsv" % "opencsv" % "3.8",
     libraryDependencies += "org.apache.pdfbox" % "pdfbox" % "2.0.4"
   )
