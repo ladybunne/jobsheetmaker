@@ -16,7 +16,10 @@ project/plugins/project/
 .scala_dependencies
 .worksheet
 .idea
+*.iml
 
-# Project things
+# Project
 options_*.ini
+input/
 output/
+logs/
