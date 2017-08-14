@@ -1,65 +1,32 @@
 package com.archmage.jobsheetmaker
 
-import javafx.fxml.FXML
-import javafx.scene.{ control => jfxsc }
-
-import java.time.LocalDate
-import scala.collection.mutable.ListBuffer
-import java.io.File
-import java.io.FileReader
-import java.io.FilenameFilter
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.time.LocalDate
+import java.io._
+import java.lang.Boolean
+import java.nio.charset.Charset
+import java.nio.file.{Files, Paths}
+import java.time.format.DateTimeFormatter
+import java.time.{LocalDate, LocalDateTime}
 import java.util.Scanner
+import javafx.application.Platform
+import javafx.beans.property.ReadOnlyObjectWrapper
+import javafx.beans.value.{ChangeListener, ObservableValue}
+import javafx.collections.FXCollections
+import javafx.event.{ActionEvent, EventHandler}
+import javafx.fxml.FXML
+import javafx.scene.control.Alert.AlertType
+import javafx.scene.control.TableColumn.CellDataFeatures
+import javafx.scene.control.cell.CheckBoxTableCell
+import javafx.scene.control.{Alert, MultipleSelectionModel, SelectionMode}
+import javafx.scene.input.{KeyCode, KeyEvent, MouseEvent}
+import javafx.scene.{control => jfxsc}
+import javafx.stage.{DirectoryChooser, Modality, Stage}
+import javafx.util.Callback
+import javafx.{fxml => jfxf, scene => jfxs}
+
+import com.archmage.jobsheetmaker.model.{JobList, WorkDay}
 
 import scala.collection.JavaConversions
 import scala.collection.mutable.ListBuffer
-
-import javafx.beans.property.ReadOnlyObjectWrapper
-import javafx.beans.value.ObservableValue
-import javafx.collections.FXCollections
-import javafx.event.ActionEvent
-import javafx.event.EventHandler
-import javafx.{ fxml => jfxf }
-import javafx.{ scene => jfxs }
-import javafx.scene.control.Button
-import javafx.scene.control.Label
-import javafx.scene.control.ProgressBar
-import javafx.scene.control.TableCell
-import javafx.scene.control.TableColumn
-import javafx.scene.control.TableColumn.CellDataFeatures
-import javafx.scene.control.TableView
-import javafx.scene.control.cell.CheckBoxTableCell
-import javafx.stage.DirectoryChooser
-import javafx.util.Callback
-import java.lang.Boolean
-import javafx.beans.value.ChangeListener
-import com.archmage.jobsheetmaker.model.WorkDay
-import javafx.stage.Stage
-import javafx.application.Platform
-import javafx.scene.layout.VBox
-import javafx.stage.Modality
-import javafx.scene.text.Text
-import javafx.scene.Scene
-import javafx.geometry.Pos
-import javafx.fxml.FXMLLoader
-import javafx.scene.Parent
-import javafx.scene.control.Alert
-import javafx.scene.control.Alert.AlertType
-import java.nio.charset.Charset
-import javafx.scene.input.MouseEvent
-import javafx.scene.control.SelectionMode
-import javafx.scene.input.KeyEvent
-import javafx.scene.input.KeyCode
-import javafx.scene.control.MultipleSelectionModel
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.io.PrintWriter
-import java.io.FileWriter
-import java.io.BufferedWriter
-import com.archmage.jobsheetmaker.model.JobList
 
 class Controller {
 	@FXML var labelCustomDirectory: jfxsc.Label = _
@@ -148,7 +115,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 	val loadPreparedFiles = () => {
 		doTaskWithProgress[File].apply(Model.inputFiles.distinct, file => {
 			val tempWorkDay = Model.loadWorkDay(file)
-			JobList.loadFromCSV(file)
+			JobList.load(file)
 			if (tempWorkDay != null) tempWorkDay.export.addListener(new ChangeListener[Boolean]() {
 				override def changed(observable: ObservableValue[_ <: Boolean],
 					oldValue: Boolean, newValue: Boolean) = {
