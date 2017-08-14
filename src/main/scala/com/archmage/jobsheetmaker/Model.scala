@@ -1,10 +1,10 @@
 package com.archmage.jobsheetmaker
 
-import scala.collection.mutable.ListBuffer
-import java.io.File
+import java.io.{File, FilenameFilter}
+
 import com.archmage.jobsheetmaker.model.WorkDay
-import java.io.FilenameFilter
-import scala.collection.mutable.HashMap
+
+import scala.collection.mutable.ListBuffer
 
 object Model {
 	val inputFiles: ListBuffer[File] = ListBuffer()
@@ -18,7 +18,9 @@ object Model {
 			false
 		} else {
 			val directory = dir.listFiles(new FilenameFilter() {
-				override def accept(dir: File, name: String): scala.Boolean = name.endsWith(".csv")
+				override def accept(dir: File, name: String): Boolean = {
+					name.endsWith(".csv") || name.endsWith(".xlsx")
+				}
 			})
 			directory.foreach(file => inputFiles += file)
 			true
