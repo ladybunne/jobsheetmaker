@@ -72,9 +72,7 @@ object JobList {
 	// only works on XLSX or plaintext files!
 	def load(fileref: File): Boolean = {
 		if (!fileref.exists()) return false
-		var lines = Seq(Seq(""))
-		if(fileref.getName.split('.').last == "xlsx") lines = loadLinesFromXLSX(fileref)
-		else lines = loadLinesFromCSV(fileref)
+		var lines = if(fileref.getName.split('.').last == "xlsx")  loadLinesFromXLSX(fileref) else loadLinesFromCSV(fileref)
 		for(nextLine <- lines) {
 			if (nextLine == lines.head) {
 				if(nextLine == null || nextLine.length < columns ||
