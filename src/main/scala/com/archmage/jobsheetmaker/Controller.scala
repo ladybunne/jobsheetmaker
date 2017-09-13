@@ -67,12 +67,17 @@ class Controller {
 		progressBar.setStyle("")
 		var count = 0
 		progressBar.setProgress(0)
-		list.foreach(element => {
+
+		def taskClosure = () => list.foreach(element => {
 			func.apply(element)
 			count += 1
+			// set this up with a Runnable and a Platform.later
 			progressBar.setProgress(Math.min(Math.max(count.floatValue / list.size, 0), 1))
 			labelStatus.setText(s"Performing task ${count}/${list.size}...")
 		})
+
+		// replace this with a new Thread() thing
+		taskClosure.apply()
 
 		progressBar.setProgress(1)
 		progressBar.setStyle("-fx-accent: MediumSeaGreen")
