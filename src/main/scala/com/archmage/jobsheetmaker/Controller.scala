@@ -11,6 +11,7 @@ import javafx.application.Platform
 import javafx.beans.property.ReadOnlyObjectWrapper
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import javafx.collections.FXCollections
+import javafx.concurrent.Task
 import javafx.event.{ActionEvent, EventHandler}
 import javafx.fxml.FXML
 import javafx.scene.control.Alert.AlertType
@@ -63,24 +64,34 @@ class Controller {
 	def exportCountPlusDuplicates = Model.workDays.filter(workDay => workDay.export.get).length
 
 	// performs a task on an iterable, while updating the progress bar's progress
-	def doTaskWithProgress[T] = (list: Iterable[T], func: (T) => Unit) => {
+	def doTaskWithProgress[T] = (list: Iterable[T],
+															 func: (T) => Unit,
+															 completion: () => Unit) => {
 		progressBar.setStyle("")
 		var count = 0
 		progressBar.setProgress(0)
 
-		def taskClosure = () => list.foreach(element => {
-			func.apply(element)
-			count += 1
-			// set this up with a Runnable and a Platform.later
-			progressBar.setProgress(Math.min(Math.max(count.floatValue / list.size, 0), 1))
-			labelStatus.setText(s"Performing task ${count}/${list.size}...")
-		})
+		def taskClosure: Task[Unit] = () => {
+			list.foreach(f = element => {
+				func.apply(element)
+				count += 1
 
-		// replace this with a new Thread() thing
-		taskClosure.apply()
+				Platform.runLater(() => {
+					progressBar.setProgress(Math.min(Math.max(count.floatValue / list.size, 0), 1))
+					labelStatus.setText(s"Performing task ${count}/${list.size}...")
+				})
+			})
 
-		progressBar.setProgress(1)
-		progressBar.setStyle("-fx-accent: MediumSeaGreen")
+			Platform.runLater(() => {
+				progressBar.setProgress(1)
+				progressBar.setStyle("-fx-accent: MediumSeaGreen")
+				completion.apply()
+			})
+		}
+
+		val taskThread = new Thread(taskClosure)
+		taskThread.start()
+
 		true
 	}
 
@@ -117,7 +128,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 	// -- functions for program logic --
 
 	// load all prepared files
-	val loadPreparedFiles = () => {
+	def loadPreparedFiles(completion: () => Unit): Unit = {
 		doTaskWithProgress[File].apply(Model.inputFiles.distinct, file => {
 			val tempWorkDay = Model.loadWorkDay(file)
 			JobList.load(file)
@@ -127,8 +138,8 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 					updateExportUI.apply
 				}
 			})
-		})
-		setStatusLabelDefault.apply
+			updateTable.apply
+		}, () => completion.apply())
 	}
 
 	// cross-reference job objects with jobs in the job list
@@ -140,8 +151,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 					job.comments += (if (job.comments.isEmpty) "" else ";") + matches(0).comments
 				}
 			})
-		})
-		setStatusLabelDefault.apply
+		}, () => setStatusLabelDefault.apply)
 	}
 
 	// update export button and label
@@ -170,24 +180,24 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 						Model.deleteWorkDay(workDay, menuOptionsPreserveDuplicates.isSelected, outputDir)
 					}
 					workDay.exportCombined(outputDir, !menuOptionsPreserveDuplicates.isSelected)
-				})
-			val outcomeText = s"Finished exporting ${exportCountCache} jobsheet${if (exportCountCache != 1) "s" else ""}."
-			labelStatus.setText(outcomeText)
+				}, () => {
+					val outcomeText = s"Finished exporting ${exportCountCache} jobsheet${if (exportCountCache != 1) "s" else ""}."
+					labelStatus.setText(outcomeText)
 
-			if (menuOptionsDeleteInput.isSelected) {
-				loadAll.apply
-				progressBar.setStyle("-fx-accent: MediumSeaGreen")
-			}
+					if (menuOptionsDeleteInput.isSelected || menuOptionsPreserveDuplicates.isSelected) {
+						loadAll.apply
+					}
 
-			if (confirmDialog) {
-				val alert = new Alert(AlertType.INFORMATION)
-				alert.setTitle("Export Complete")
-				alert.setHeaderText(null)
-				alert.initOwner(stage)
-				alert.initModality(Modality.APPLICATION_MODAL)
-				alert.setContentText(outcomeText)
-				alert.showAndWait()
-			}
+					if (confirmDialog) {
+						val alert = new Alert(AlertType.INFORMATION)
+						alert.setTitle("Export Complete")
+						alert.setHeaderText(null)
+						alert.initOwner(stage)
+						alert.initModality(Modality.APPLICATION_MODAL)
+						alert.setContentText(outcomeText)
+						alert.showAndWait()
+					}
+			})
 		})
 	}
 
@@ -198,18 +208,22 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 			Model.prepareFilesInDir.apply(new File("."))
 			Model.prepareFilesInDir.apply(new File("input"))
 			Model.prepareFilesInDir.apply(customDirectory)
-			loadPreparedFiles.apply
-			crossReference.apply
-			Model.workDays.foreach(day => day.jobs.foreach(job => println(job.toString)))
-			progressBar.setStyle("")
-			updateTable.apply
-			updateExportUI.apply
+			loadPreparedFiles(() => {
+				setStatusLabelDefault.apply
+				crossReference.apply
+				Model.workDays.foreach(day => day.jobs.foreach(job => println(job.toString)))
+				progressBar.setStyle("")
+				updateTable.apply
+				updateExportUI.apply
+			})
 		})
 	}
 
 	// update table
 	val updateTable = () => {
-		tableFiles.setItems(FXCollections.observableList(JavaConversions.bufferAsJavaList(Model.workDays.toBuffer)))
+		Platform.runLater(() => {
+			tableFiles.setItems(FXCollections.observableList(JavaConversions.bufferAsJavaList(Model.workDays)))
+		})
 	}
 
 	val loadOptions = () => {
@@ -374,10 +388,12 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 			}
 		})
 
-		createProgramDirs.apply
-		loadOptions.apply
-		setCustomDir(customDirectory)
-		loadAll.apply
+		new Thread(() => {
+			createProgramDirs.apply
+			loadOptions.apply
+			setCustomDir(customDirectory)
+			loadAll.apply
+		}).run()
 	}
 
 	@FXML
