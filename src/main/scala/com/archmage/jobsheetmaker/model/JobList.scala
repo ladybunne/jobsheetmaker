@@ -28,36 +28,50 @@ object JobList {
 		reader.readAll().asScala.map(line => line.toSeq)
 	}
 
-	def loadLinesFromXLSX(fileref: File): Seq[Seq[String]] = {
+	def loadLinesFromXLSX(fileref: File): Option[Seq[Seq[String]]] = {
 		var inp: InputStream = null
 		var lines = ListBuffer[Seq[String]]()
 		var line = ""
 		try {
 			inp = new FileInputStream(fileref)
 			val workbook = WorkbookFactory.create(inp)
-			for(sheetIndex <- 0 until workbook.getNumberOfSheets) {
-				val sheet = workbook.getSheetAt(sheetIndex)
-				for(rowIndex <- 0 to sheet.getLastRowNum) {
-					var line = ListBuffer[String]()
-					val row = sheet.getRow(rowIndex)
-					for(cellIndex <- 0 until row.getLastCellNum) {
+
+			// only checking one sheet!
+			val sheet = workbook.getSheetAt(0)
+			for(rowIndex <- 0 to sheet.getLastRowNum) {
+				var line = ListBuffer[String]()
+				val row = sheet.getRow(rowIndex)
+				if(row != null) {
+					// check sheet headings
+					if(rowIndex == 0) {
+						if(row.getLastCellNum <= columns) return None
+						if(!row.getCell(1).getStringCellValue.contains("Start") ||
+							!row.getCell(2).getStringCellValue.contains("End")) return None
+						// we've now verified that this file is valid
+						// this should solve most of the problems
+						// doing it here prevents fucky XML loading
+						// it's a bit of a hack, it might be fixed later
+					}
+					for (cellIndex <- 0 until row.getLastCellNum) {
 						val cell = row.getCell(cellIndex)
 						cell.getCellTypeEnum match {
 							case CellType.NUMERIC => line += cell.getNumericCellValue.toString
 							case CellType.STRING => line += cell.getStringCellValue
+							case CellType.FORMULA => line += cell.getCellFormula
 							case CellType.BLANK => ()
 							case _ => print(cell.getCellTypeEnum.name)
 						}
 					}
-					lines += line.toSeq
+					lines += line
 				}
 			}
-			lines
+
+			Option(lines)
 		}
 		catch {
-			case _: InvalidFormatException => Seq()
-			case _: FileNotFoundException => Seq()
-			case _: IOException => Seq()
+			case _: InvalidFormatException => None
+			case _: FileNotFoundException => None
+			case _: IOException => None
 		}
 		finally {
 			try {
@@ -72,7 +86,14 @@ object JobList {
 	// only works on XLSX or plaintext files!
 	def load(fileref: File): Boolean = {
 		if (!fileref.exists()) return false
-		var lines = if(fileref.getName.split('.').last == "xlsx")  loadLinesFromXLSX(fileref) else loadLinesFromCSV(fileref)
+		println(fileref)
+		var lines = Seq(Seq(""))
+		if(fileref.getName.split('.').last == "xlsx") {
+			val maybelines = loadLinesFromXLSX(fileref)
+			if(maybelines.isEmpty) return false
+			else lines = maybelines.getOrElse(Seq(Seq("")))
+		}
+		else lines = loadLinesFromCSV(fileref)
 		for(nextLine <- lines) {
 			if (nextLine == lines.head) {
 				if(nextLine == null || nextLine.length < columns ||
