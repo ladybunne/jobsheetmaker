@@ -13,7 +13,7 @@ object MainApp {
 
 	var controller: Controller = _
 
-	val VERSION = "v1.4"
+	val VERSION = "v1.5"
 }
 
 class MainApp extends Application {
