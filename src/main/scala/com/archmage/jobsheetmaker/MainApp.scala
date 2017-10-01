@@ -19,12 +19,12 @@ object MainApp {
 class MainApp extends Application {
 	override def start(primaryStage: Stage): Unit = {
 		var loader: FXMLLoader = null
-		var fxmlFromJar = MainApp.getClass.getResource("/JobsheetMaker.fxml")
+		val fxmlFromJar = MainApp.getClass.getResource("/JobsheetMaker.fxml")
 		if (fxmlFromJar != null) {
 			loader = new FXMLLoader(fxmlFromJar)
 		} else {
 			// debugging
-			loader = new FXMLLoader(new File("src/main/resources/JobsheetMaker.fxml").toURI().toURL())
+			loader = new FXMLLoader(new File("src/main/resources/JobsheetMaker.fxml").toURI.toURL)
 		}
 		val root: Parent = loader.load()
 		MainApp.controller = loader.getController[Controller]
@@ -42,7 +42,7 @@ class MainApp extends Application {
 		primaryStage.show()
 	}
 
-	override def stop: Unit = {
-		MainApp.controller.saveOptions.apply
+	override def stop(): Unit = {
+		MainApp.controller.saveOptions
 	}
 }

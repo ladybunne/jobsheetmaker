@@ -1,14 +1,9 @@
 package com.archmage.jobsheetmaker.model
 
-class Address(
-	val line1: String = "",
-	val line2: String = "",
-	val line3: String = "",
-	val suburb: String = "",
-	val postcode: String = "",
-	val state: String = "NSW") {
+case class Address(line1: String = "", line2: String = "", line3: String = "", suburb: String = "",
+	postcode: String = "", state: String = "NSW") {
 
-	override def toString = {
+	override def toString: String = {
 		var output = ""
 		for (str <- Array(line1, line2, line3) if str != "") output += str + ", "
 		if (suburb != "") output += suburb + " "

@@ -8,9 +8,9 @@ import scala.collection.mutable.ListBuffer
 
 object Model {
 	val inputFiles: ListBuffer[File] = ListBuffer()
-	val workDays: ListBuffer[WorkDay] = ListBuffer()
+	var workDays: ListBuffer[WorkDay] = ListBuffer()
 
-	def exportCount = workDays.filter(workDay => workDay.export.get).size
+	def exportCount = workDays.count(workDay => workDay.export.get)
 
 	// prepare a directory's csv files for loading
 	val prepareFilesInDir = (dir: File) => {
@@ -29,7 +29,7 @@ object Model {
 
 	def loadWorkDay(file: File) = {
 		val tempWorkDay = WorkDay.loadFromCSV(file)
-		if (tempWorkDay != null && !tempWorkDay.jobs.isEmpty &&
+		if (tempWorkDay != null && tempWorkDay.jobs.nonEmpty &&
 			tempWorkDay.worker.name != WorkDay.noWorker.name) {
 			Model.workDays += tempWorkDay
 			tempWorkDay

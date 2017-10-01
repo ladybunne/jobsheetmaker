@@ -31,7 +31,6 @@ object JobList {
 	def loadLinesFromXLSX(fileref: File): Option[Seq[Seq[String]]] = {
 		var inp: InputStream = null
 		var lines = ListBuffer[Seq[String]]()
-		var line = ""
 		try {
 			inp = new FileInputStream(fileref)
 			val workbook = WorkbookFactory.create(inp)
@@ -78,7 +77,7 @@ object JobList {
 				inp.close()
 			}
 			catch {
-				case _: IOException => {}
+				case _: IOException => ()
 			}
 		}
 	}
@@ -103,7 +102,7 @@ object JobList {
 				val datetime = LocalDateTime.parse(nextLine(1).substring(0, 19),
 					DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 				val client = new Client(nextLine(3), "", new Address(), "")
-				val duration = if (nextLine(1).isEmpty() || nextLine(2).isEmpty() ||
+				val duration = if (nextLine(1).isEmpty || nextLine(2).isEmpty ||
 					nextLine(1).length < stringLengthForDuration ||
 					nextLine(2).length < stringLengthForDuration) {
 					Duration.ofMinutes(0)
@@ -113,9 +112,9 @@ object JobList {
 						LocalTime.parse(nextLine(2).substring(11, 19), DateTimeFormatter.ISO_LOCAL_TIME)))
 				}
 				val job = new Job(client, null, datetime, duration, "", "", nextLine(4).replaceAll("\n", "; "), false)
-				jobs += (job)
+				jobs += job
 			}
 		}
-		return true
+		true
 	}
 }

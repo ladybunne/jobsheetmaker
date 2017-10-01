@@ -1,26 +1,23 @@
 package com.archmage.jobsheetmaker.model
 
-import java.io.File
-import com.opencsv.CSVReader
-import java.io.FileReader
-import java.time.LocalDate
+import java.io.{File, FileReader, InputStream}
+import java.time.{Duration, LocalDate, LocalDateTime, LocalTime}
 import java.time.format.DateTimeFormatter
-import scala.collection.mutable.ListBuffer
+import java.time.temporal.ChronoUnit
+import javafx.beans.property.{BooleanProperty, SimpleBooleanProperty}
+
+import com.archmage.jobsheetmaker.Tools
+import com.opencsv.CSVReader
+import org.apache.pdfbox.io.MemoryUsageSetting
+import org.apache.pdfbox.multipdf.PDFMergerUtility
 import org.apache.pdfbox.pdmodel.PDDocument
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm
-import org.apache.pdfbox.multipdf.PDFMergerUtility
-import org.apache.pdfbox.io.MemoryUsageSetting
-import java.time.LocalTime
-import java.time.temporal.ChronoUnit
-import java.time.Duration
-import javafx.beans.property.SimpleBooleanProperty
-import javafx.beans.property.BooleanProperty
-import com.archmage.jobsheetmaker.Tools
-import java.io.InputStream
-import java.io.FileInputStream
-import scala.util.matching.Regex.Replacement
-import java.time.LocalDateTime
 
+import scala.collection.mutable.ListBuffer
+
+/**
+	* A day of work. Contains a worker, their jobs, the date of work and an optional source fileref for deleting.
+	*/
 object WorkDay {
 	def template: InputStream = Tools.getFirstExistingStream(
 		Tools.getStreamIfFileExists(new File("Day Overview Template")),
@@ -31,10 +28,10 @@ object WorkDay {
 	val columnsInDayOverviewExport = 18
 	val stringLengthForDuration = 19
 
-	def setField: (PDAcroForm, String, String) => Boolean = (form: PDAcroForm, fieldName: String, value: String) => {
-		for (elem <- Array(form, fieldName, value)) if (elem == null) false
+	def setField(form: PDAcroForm, fieldName: String, value: String): Boolean = {
+		for (elem <- Array(form, fieldName, value)) if (elem == null) return false
 		val field = form.getField(fieldName)
-		if (field == null) false
+		if (field == null) return false
 		field.setValue(value)
 		true
 	}
@@ -53,7 +50,7 @@ object WorkDay {
 				val datetime = LocalDateTime.parse(nextLine(0).substring(0, 19), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 				if (date == LocalDate.MIN) {
 					if (nextLine(0).length == 0) return null
-					else date = datetime.toLocalDate()
+					else date = datetime.toLocalDate
 				}
 				if (worker == null) {
 					if (nextLine(2).split(" and ").length > 1) {
@@ -74,7 +71,7 @@ object WorkDay {
 				}
 				val address = new Address(nextLine(5), nextLine(6), nextLine(7), nextLine(8), nextLine(10))
 				val client = new Client(nextLine(3), if (nextLine(4).isEmpty) nextLine(11) else nextLine(4), address, nextLine(14))
-				val duration = if (nextLine(0).isEmpty() || nextLine(1).isEmpty() ||
+				val duration = if (nextLine(0).isEmpty || nextLine(1).isEmpty ||
 					nextLine(0).length < stringLengthForDuration ||
 					nextLine(1).length < stringLengthForDuration) {
 					Duration.ofMinutes(0)
@@ -84,27 +81,27 @@ object WorkDay {
 						LocalTime.parse(nextLine(1).substring(11, 19), DateTimeFormatter.ISO_LOCAL_TIME)))
 				}
 				val job = new Job(client, Array(worker), datetime, duration, nextLine(12), nextLine(16), nextLine(17).replaceAll("\n", "; "), nextLine(15) == "Yes")
-				jobs += (job)
+				jobs += job
 			}
 			nextLine = reader.readNext()
 		}
 		if (worker == null) worker = noWorker
-		reader.close
-		new WorkDay(worker, date, jobs.toArray, fileref)
+		reader.close()
+		new WorkDay(worker, date, jobs.toList, fileref)
 	}
 }
 
 class WorkDay(
 	val worker: Worker,
 	val date: LocalDate,
-	val jobs: Array[Job],
+	val jobs: List[Job],
 	val source: File = null) {
 
 	val export: BooleanProperty = new SimpleBooleanProperty(true)
 
 	def outputOverview = {
 		val document = PDDocument.load(WorkDay.template)
-		val acroForm = document.getDocumentCatalog().getAcroForm()
+		val acroForm = document.getDocumentCatalog.getAcroForm
 
 		acroForm.getField("Title").setValue(s"Day Overview for ${worker.name}, ${
 			date.format(DateTimeFormatter.ofPattern("EEEE dd/MM/uuuu"))
@@ -117,7 +114,7 @@ class WorkDay(
 			if (!job.cancelled) {
 				val fieldNames = Array("Client", "Contact", "Address", "Services", "Comments")
 				val values = Array(job.client.name, job.client.phone, job.client.address.toString(), job.services, job.comments)
-				for (i <- 0 to fieldNames.length - 1) {
+				for (i <- 0 until fieldNames.length) {
 					WorkDay.setField(acroForm, s"${fieldNames(i)}_${index + 1}", values(i))
 				}
 				index += 1
@@ -132,7 +129,7 @@ class WorkDay(
 	}
 
 	def exportOverview = {
-		outputOverview.save(s"${worker} - Overview, $date.pdf")
+		outputOverview.save(s"$worker - Overview, $date.pdf")
 		outputOverview.close()
 	}
 
@@ -168,11 +165,11 @@ class WorkDay(
 	}
 
 	def getExportFilename = () => {
-		s"${worker.name} - Complete, ${date}.pdf"
+		s"${worker.name} - Complete, $date.pdf"
 	}
 
 	def checkExportExists(dir: File): Boolean = {
-		val exportFilename = s"${dir.getAbsolutePath}/${worker.name} - Complete, ${date}.pdf"
+		val exportFilename = s"${dir.getAbsolutePath}/${worker.name} - Complete, $date.pdf"
 		new File(exportFilename).exists()
 	}
 

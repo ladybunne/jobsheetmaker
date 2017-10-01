@@ -1,4 +1,4 @@
-# JobsheetMaker
+# JobsheetMaker [![GitHub version](https://badge.fury.io/gh/archmage%2Fjobsheetmaker.svg)](https://badge.fury.io/gh/archmage%2Fjobsheetmaker) [![Build Status](https://travis-ci.org/archmage/jobsheetmaker.svg?branch=master)](https://travis-ci.org/archmage/jobsheetmaker)
 JobsheetMaker is a _customised CSV to PDF converter_ that was originally developed to address a gap between a client's CRM features and their requirements. It was a project that was prototyped and pitched over around a week, then developed over two weeks and further supported over several months.
 
 # Usage
