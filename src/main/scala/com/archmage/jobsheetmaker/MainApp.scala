@@ -6,16 +6,6 @@ import javafx.scene.{ Scene, Parent }
 import javafx.stage.Stage
 import java.io.File
 
-object MainApp {
-	def main(args: Array[String]) {
-		Application.launch(classOf[MainApp], args: _*)
-	}
-
-	var controller: Controller = _
-
-	val VERSION = "v1.5"
-}
-
 class MainApp extends Application {
 	override def start(primaryStage: Stage): Unit = {
 		var loader: FXMLLoader = null
@@ -45,4 +35,14 @@ class MainApp extends Application {
 	override def stop(): Unit = {
 		MainApp.controller.saveOptions
 	}
+}
+
+object MainApp {
+	def main(args: Array[String]) {
+		Application.launch(classOf[MainApp], args: _*)
+	}
+
+	var controller: Controller = _
+
+	val VERSION = getClass.getPackage.getImplementationVersion
 }

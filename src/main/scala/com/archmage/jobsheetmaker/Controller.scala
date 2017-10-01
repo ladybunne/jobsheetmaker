@@ -9,27 +9,28 @@ import java.time.{LocalDate, LocalDateTime}
 import java.util.Scanner
 import javafx.application.Platform
 import javafx.beans.property.ReadOnlyObjectWrapper
-import javafx.beans.value.{ChangeListener, ObservableValue}
+import javafx.beans.value.ObservableValue
 import javafx.collections.FXCollections
 import javafx.concurrent.Task
-import javafx.event.{ActionEvent, EventHandler}
+import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.scene.control.Alert.AlertType
-import javafx.scene.control.TableColumn.CellDataFeatures
 import javafx.scene.control.cell.CheckBoxTableCell
 import javafx.scene.control.{Alert, MultipleSelectionModel, SelectionMode}
 import javafx.scene.input.{KeyCode, KeyEvent, MouseEvent}
 import javafx.scene.{control => jfxsc}
 import javafx.stage.{DirectoryChooser, Modality, Stage}
-import javafx.util.Callback
-import javafx.{fxml => jfxf, scene => jfxs}
 
-import com.archmage.jobsheetmaker.model.{JobList, WorkDay}
+import com.archmage.jobsheetmaker.model.{JobReport, ModelF, SourceLoader, WorkDay}
 
 import scala.collection.JavaConversions
 import scala.collection.mutable.ListBuffer
 
+/**
+	* The business.
+	*/
 class Controller {
+	// -- fxml references --
 	@FXML var labelCustomDirectory: jfxsc.Label = _
 	@FXML var buttonRefresh: jfxsc.Button = _
 	@FXML var buttonSetCustomFolder: jfxsc.Button = _
@@ -47,7 +48,9 @@ class Controller {
 	@FXML var menuOptionsDeleteInput: jfxsc.CheckMenuItem = _
 	@FXML var menuOptionsPreserveDuplicates: jfxsc.CheckMenuItem = _
 
-	// variables for program logic
+	// -- variables for program logic --
+	var model = ModelF()
+
 	val inputDir = new File("input")
 	val outputDir = new File("output")
 	val logDir = new File("logs")
@@ -59,16 +62,10 @@ class Controller {
 
 	var stage: Stage = _
 
-	// -- helper functions --
-
-	// export counts, used for UI things
-	def exportCount = Model.workDays.count(workDay => {
-		workDay.export.get && (!menuOptionsPreserveDuplicates.isSelected || !workDay.checkExportExists(outputDir))
-	})
-	def exportCountPlusDuplicates = Model.workDays.count(workDay => workDay.export.get)
+	// -- helper functions - currently fucked atm --
 
 	// performs a task on an iterable, while updating the progress bar's progress
-	def doTaskWithProgress[T] = (list: Iterable[T], func: (T) => Unit, completion: () => Unit) => {
+	def doTaskWithProgress[T](list: Iterable[T], func: (T) => Unit, completion: () => Unit): Unit = {
 		progressBar.setStyle("")
 		var count = 0
 		progressBar.setProgress(0)
@@ -93,8 +90,6 @@ class Controller {
 
 		val taskThread = new Thread(taskClosure)
 		taskThread.start()
-
-		true
 	}
 
 	// attempts an unsafe operation, and handles it with a prompt on an error
@@ -127,106 +122,13 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 		}
 	}
 
-	// -- functions for program logic --
+	// -- setup / options functions --
 
-	// load all prepared files
-	def loadPreparedFiles(completion: () => Unit): Unit = {
-		doTaskWithProgress[File].apply(Model.inputFiles.distinct, file => {
-			val tempWorkDay = Model.loadWorkDay(file)
-			JobList.load(file)
-			if (tempWorkDay != null) tempWorkDay.export.addListener(new ChangeListener[Boolean]() {
-				override def changed(observable: ObservableValue[_ <: Boolean],
-					oldValue: Boolean, newValue: Boolean) = {
-					updateExportUI
-				}
-			})
-			updateTable
-		}, () => completion.apply())
-	}
+	// ensure program directories exist
+	def createProgramDirs() : Unit = Seq(inputDir, outputDir, logDir).foreach(dir => if (!dir.exists) dir.mkdir)
 
-	// cross-reference job objects with jobs in the job list
-	def crossReference = {
-		doTaskWithProgress[WorkDay](Model.workDays, workday => {
-			workday.jobs.foreach(job => {
-				val matches = JobList.jobs.filter(joblistjob => joblistjob.checkEquality(job))
-				if (matches.nonEmpty && job.comments != matches.head.comments) {
-					job.comments += (if (job.comments.isEmpty) "" else "; ") + matches.head.comments
-				}
-			})
-		}, () => setStatusLabelDefault)
-	}
-
-	// update export button and label
-	def updateExportUI = {
-		columnDuplicate.setVisible(menuOptionsPreserveDuplicates.isSelected)
-		if (exportCount == 0) {
-			if (exportCountPlusDuplicates != 0) {
-				// handle duplicates
-			}
-			buttonExport.setText("Export (0)")
-			buttonExport.setDisable(true)
-
-		} else {
-			buttonExport.setText(s"Export ($exportCount)")
-			buttonExport.setDisable(false)
-		}
-	}
-
-	// export all work days
-	def exportAllWorkDays(confirmDialog: Boolean) = {
-		tryWithErrorPrompt.apply(() => {
-			val exportCountCache = exportCount
-			doTaskWithProgress[WorkDay].apply(
-				Model.workDays, workDay => {
-					if (menuOptionsDeleteInput.isSelected) {
-						Model.deleteWorkDay(workDay, menuOptionsPreserveDuplicates.isSelected, outputDir)
-					}
-					workDay.exportCombined(outputDir, !menuOptionsPreserveDuplicates.isSelected)
-				}, () => {
-					val outcomeText = s"Finished exporting $exportCountCache jobsheet${if (exportCountCache != 1) "s" else ""}."
-					labelStatus.setText(outcomeText)
-
-					if (menuOptionsDeleteInput.isSelected || menuOptionsPreserveDuplicates.isSelected) loadAll
-
-					if (confirmDialog) {
-						val alert = new Alert(AlertType.INFORMATION)
-						alert.setTitle("Export Complete")
-						alert.setHeaderText(null)
-						alert.initOwner(stage)
-						alert.initModality(Modality.APPLICATION_MODAL)
-						alert.setContentText(outcomeText)
-						alert.showAndWait()
-					}
-			})
-		})
-	}
-
-	// prepare all file references, then load all files
-	def loadAll = {
-		tryWithErrorPrompt.apply(() => {
-			Model.clear
-			Model.prepareFilesInDir.apply(new File("."))
-			Model.prepareFilesInDir.apply(new File("input"))
-			Model.prepareFilesInDir.apply(customDirectory)
-			loadPreparedFiles(() => {
-				setStatusLabelDefault
-				crossReference
-				Model.workDays.foreach(day => day.jobs.foreach(job => println(job.toString)))
-				progressBar.setStyle("")
-				updateTable
-				updateExportUI
-			})
-		})
-	}
-
-	// update table
-	def updateTable = {
-		Platform.runLater(() => {
-			tableFiles.setItems(FXCollections.observableList(JavaConversions.bufferAsJavaList(Model.workDays)))
-		})
-	}
-
-	def loadOptions = {
+	// load options from file
+	def loadOptions(): Unit = {
 		val customDirFile = new File(customDirFilename)
 		if (customDirFile.exists && !customDirFile.isDirectory) {
 			val in = new Scanner(new FileReader(customDirFile))
@@ -256,17 +158,8 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 	}
 
-	def setCustomDir(dir: File) = {
-		val exists = dir.exists && dir.isDirectory
-		if (exists) {
-			customDirectory = dir
-			labelCustomDirectory.setText(s"Custom folder: ${customDirectory.getAbsolutePath}")
-			saveOptions
-		}
-		exists
-	}
-
-	def saveOptions = {
+	// save options to file
+	def saveOptions(): Unit = {
 		val customDirFile = new File(customDirFilename)
 		if (!customDirFile.exists() || customDirFile.canWrite) {
 			val output = ListBuffer(
@@ -283,30 +176,139 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 		}
 	}
 
-	def createProgramDirs = List(inputDir, outputDir, logDir).foreach(dir => if (!dir.exists) dir.mkdir)
+	// set custom directory
+	def setCustomDir(dir: File) = {
+		val exists = dir.exists && dir.isDirectory
+		if (exists) {
+			customDirectory = dir
+			labelCustomDirectory.setText(s"Custom folder: ${customDirectory.getAbsolutePath}")
+			saveOptions
+		}
+		exists
+	}
 
-	def selectCustomDir = {
+	// change custom directory
+	def selectCustomDir(): Unit = {
 		val chooser = new DirectoryChooser
 		chooser.setTitle("Set New Custom Folder")
 		chooser.setInitialDirectory(new File(System.getProperty("user.home")))
 		val selectedDir = chooser.showDialog(stage)
 		if (selectedDir != null) {
 			setCustomDir(selectedDir)
-			loadAll
+			loadAll()
 		}
 	}
 
-	def setStatusLabelDefault = {
-		if (Model.inputFiles.nonEmpty) {
-			labelStatus.setText(s"${Model.inputFiles.length} source file${
-				if (Model.inputFiles.length != 1) "s" else ""
-			} found, ${
-				Model.workDays.length
-			} jobsheet${if (Model.workDays.length != 1) "s" else ""} loaded.")
+	// -- program logic --
+
+	// prepare files for loading
+	def prepareFiles(): Unit = {
+		model = ModelF(
+			SourceLoader().
+				addDir(new File(".")).
+				addDir(new File("input")).
+				addDir(customDirectory)
+		)
+	}
+
+	// load all prepared files
+	def loadPreparedFiles(completion: () => Unit): Unit = {
+		// fuck concurrency
+		// load workdays
+		model = ModelF(model.loader,
+			model.loader.csvFiles.flatMap(f => model.loader.loadSingle(f)),
+			model.loader.xlsxFiles.flatMap(f => JobReport.load(f)).flatten
+		)
+
+		completion.apply()
+	}
+
+	// cross-reference job objects with jobs in the job list
+	def crossReference(): Unit = {
+		model = ModelF(model.loader,
+			model.days.map(d => WorkDay(d.worker, d.date, jobs = d.jobs.map(j => {
+				// get all equal jobs in model.jobs
+				val matches = model.jobs.filter(j2 => j2.checkEquality(j))
+				if(matches.isEmpty) j else j.appendComment(matches.head.comments.replace(j.comments, "") + "; ")
+			}),
+				d.source, d.export)),
+			model.jobs)
+	}
+
+	// export all work days
+	def exportAllWorkDays(confirmDialog: Boolean) = {
+		tryWithErrorPrompt.apply(() => {
+			val exportCountCache = model.exportCount()
+			doTaskWithProgress[WorkDay](
+				model.days, workDay => {
+					if (menuOptionsDeleteInput.isSelected) {
+						// do some business here
+						// disabling this for now :)
+						// model.deleteWorkDay(workDay, menuOptionsPreserveDuplicates.isSelected, outputDir)
+					}
+					workDay.exportCombined(outputDir, !menuOptionsPreserveDuplicates.isSelected)
+				}, () => {
+					val outcomeText = s"Finished exporting $exportCountCache jobsheet${if (exportCountCache != 1) "s" else ""}."
+					labelStatus.setText(outcomeText)
+
+					if (menuOptionsDeleteInput.isSelected || menuOptionsPreserveDuplicates.isSelected) loadAll()
+
+					if (confirmDialog) {
+						val alert = new Alert(AlertType.INFORMATION)
+						alert.setTitle("Export Complete")
+						alert.setHeaderText(null)
+						alert.initOwner(stage)
+						alert.initModality(Modality.APPLICATION_MODAL)
+						alert.setContentText(outcomeText)
+						alert.showAndWait()
+					}
+			})
+		})
+	}
+
+	// prepare all file references, then load all files
+	def loadAll(): Unit = {
+		prepareFiles()
+		loadPreparedFiles(() => ())
+		crossReference()
+		updateTable()
+		updateExportUI()
+	}
+
+	// -- interface-modifying functions --
+
+	def setStatusLabelDefault(): Unit = {
+		val fileCount = model.loader.fileCount
+		if (fileCount > 0) {
+			labelStatus.setText(s"$fileCount source file${if (fileCount != 1) "s" else ""} found, ${
+				model.days.size} jobsheet${if (model.days.size != 1) "s" else ""} loaded.")
 		} else labelStatus.setText("Ready")
 	}
 
-	// -- modifying javafx elements --
+	// update table
+	def updateTable(): Unit = {
+		Platform.runLater(() => {
+			tableFiles.setItems(FXCollections.observableList(JavaConversions.seqAsJavaList(model.days.toSeq)))
+		})
+	}
+
+	// update export button and label
+	def updateExportUI(): Unit = {
+		columnDuplicate.setVisible(menuOptionsPreserveDuplicates.isSelected)
+		if (model.exportCount() == 0) {
+			if (model.exportCount(true, outputDir) != 0) {
+				// handle duplicates
+			}
+			buttonExport.setText("Export (0)")
+			buttonExport.setDisable(true)
+
+		} else {
+			buttonExport.setText(s"Export (${model.exportCount()})")
+			buttonExport.setDisable(false)
+		}
+	}
+
+	// -- javafx event handling --
 
 	@FXML def buttonRefreshHover(event: MouseEvent): Unit = labelStatus.setText("Reload input files.")
 	@FXML def buttonRefreshAction(event: ActionEvent): Unit = loadAll
@@ -328,7 +330,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 		}
 	}
 
-	@FXML def elementUnhover(event: MouseEvent): Unit = setStatusLabelDefault
+	@FXML def elementUnhover(event: MouseEvent): Unit = setStatusLabelDefault()
 
 	// -- startup and shutdown code! --
 
@@ -347,13 +349,13 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 		columnWorkerName.setCellValueFactory((p) => new ReadOnlyObjectWrapper(p.getValue.worker.name))
 		columnJobs.setCellValueFactory((p) => new ReadOnlyObjectWrapper(p.getValue.jobs.length))
 
-		menuOptionsPreserveDuplicates.setOnAction((_) => updateExportUI)
+		menuOptionsPreserveDuplicates.setOnAction(_ => updateExportUI())
 
 		new Thread(() => {
-			createProgramDirs
-			loadOptions
+			createProgramDirs()
+			loadOptions()
 			setCustomDir(customDirectory)
-			loadAll
+			loadAll()
 		}).run()
 	}
 
