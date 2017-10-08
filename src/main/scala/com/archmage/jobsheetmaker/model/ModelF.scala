@@ -23,5 +23,25 @@ case class ModelF(loader: SourceLoader = SourceLoader(), days: Set[WorkDay] = Se
     else this
   }
 
-
+  // run this on a separate thread
+  def loadSourceFiles(onEach: () => Unit, onComplete: () => Unit): ModelF = {
+    if(loader.csvFiles.isEmpty && loader.xlsxFiles.isEmpty) {
+      onComplete.apply()
+      this
+    }
+    else {
+      // load csv workday
+      if(loader.csvFiles.nonEmpty) {
+        val day = loader.loadSingle(loader.csvFiles.head)
+        onEach.apply()
+        ModelF(SourceLoader(loader.csvFiles.tail, loader.xlsxFiles), days ++ day, jobs).loadSourceFiles(onEach, onComplete)
+      }
+      // load xlsx job report
+      else {
+        val loadedJobs = JobReport.load(loader.xlsxFiles.head).getOrElse(Set())
+        onEach.apply()
+        ModelF(SourceLoader(loader.csvFiles, loader.xlsxFiles.tail), days, jobs ++ loadedJobs).loadSourceFiles(onEach, onComplete)
+      }
+    }
+  }
 }

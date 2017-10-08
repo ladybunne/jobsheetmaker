@@ -213,14 +213,17 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 	// load all prepared files
 	def loadPreparedFiles(completion: () => Unit): Unit = {
-		// fuck concurrency
-		// load workdays
-		model = ModelF(model.loader,
-			model.loader.csvFiles.flatMap(f => model.loader.loadSingle(f)),
-			model.loader.xlsxFiles.flatMap(f => JobReport.load(f)).flatten
-		)
+		val fileCount = model.loader.fileCount
+		val onEach = () => {
+			Platform.runLater(() => {
+				progressBar.setProgress(progressBar.getProgress + 1.0 / fileCount)
+			})
+		}
 
-		completion.apply()
+		new Thread(() => {
+			val loaded = model.loadSourceFiles(onEach, completion)
+			model = ModelF(model.loader, loaded.days, loaded.jobs)
+		}).start()
 	}
 
 	// cross-reference job objects with jobs in the job list
