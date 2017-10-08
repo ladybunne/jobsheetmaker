@@ -280,12 +280,18 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 	// -- interface-modifying functions --
 
-	def setStatusLabelDefault(): Unit = {
-		val fileCount = model.loader.fileCount
-		if (fileCount > 0) {
-			labelStatus.setText(s"$fileCount source file${if (fileCount != 1) "s" else ""} found, ${
+	def setStatusUIDefault(): Unit = {
+		val dayCount = model.days.size
+		if (dayCount > 0) {
+			labelStatus.setText(s"$dayCount source file${if (dayCount != 1) "s" else ""} found, ${
 				model.days.size} jobsheet${if (model.days.size != 1) "s" else ""} loaded.")
-		} else labelStatus.setText("Ready")
+			progressBar.setStyle("-fx-accent: MediumSeaGreen")
+		}
+		else {
+			labelStatus.setText("Ready")
+			progressBar.setProgress(1)
+			progressBar.setStyle("")
+		}
 	}
 
 	// update table
