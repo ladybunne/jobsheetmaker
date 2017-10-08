@@ -9,7 +9,7 @@ import java.io.File
 class MainApp extends Application {
 	override def start(primaryStage: Stage): Unit = {
 		var loader: FXMLLoader = null
-		val fxmlFromJar = MainApp.getClass.getResource("/JobsheetMaker.fxml")
+		val fxmlFromJar = getClass.getResource("/JobsheetMaker.fxml")
 		if (fxmlFromJar != null) {
 			loader = new FXMLLoader(fxmlFromJar)
 		} else {
@@ -33,7 +33,7 @@ class MainApp extends Application {
 	}
 
 	override def stop(): Unit = {
-		MainApp.controller.saveOptions
+		MainApp.controller.saveOptions()
 	}
 }
 
@@ -44,5 +44,5 @@ object MainApp {
 
 	var controller: Controller = _
 
-	val VERSION = getClass.getPackage.getImplementationVersion
+	val VERSION = "v1.5"
 }

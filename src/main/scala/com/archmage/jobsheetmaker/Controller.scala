@@ -182,7 +182,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 		if (exists) {
 			customDirectory = dir
 			labelCustomDirectory.setText(s"Custom folder: ${customDirectory.getAbsolutePath}")
-			saveOptions
+			saveOptions()
 		}
 		exists
 	}
@@ -314,10 +314,10 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 	// -- javafx event handling --
 
 	@FXML def buttonRefreshHover(event: MouseEvent): Unit = labelStatus.setText("Reload input files.")
-	@FXML def buttonRefreshAction(event: ActionEvent): Unit = loadAll
+	@FXML def buttonRefreshAction(event: ActionEvent): Unit = loadAll()
 
 	@FXML def buttonSetCustomFolderHover(event: MouseEvent): Unit = labelStatus.setText("Set a new custom input folder.")
-	@FXML def buttonSetCustomFolderAction(event: ActionEvent): Unit = selectCustomDir
+	@FXML def buttonSetCustomFolderAction(event: ActionEvent): Unit = selectCustomDir()
 
 	@FXML def buttonOpenExportFolderHover(event: MouseEvent): Unit = labelStatus.setText("Open the folder where exported jobsheets go.")
 	@FXML def buttonOpenExportFolderAction(event: ActionEvent): Unit = Runtime.getRuntime.exec(s"explorer.exe ${outputDir.getAbsolutePath}")
@@ -333,7 +333,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 		}
 	}
 
-	@FXML def elementUnhover(event: MouseEvent): Unit = setStatusLabelDefault()
+	@FXML def elementUnhover(event: MouseEvent): Unit = setStatusUIDefault()
 
 	// -- startup and shutdown code! --
 
