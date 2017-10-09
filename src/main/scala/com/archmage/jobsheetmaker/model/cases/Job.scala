@@ -2,7 +2,7 @@ package com.archmage.jobsheetmaker.model.cases
 
 import java.io.{File, InputStream}
 import java.time.format.DateTimeFormatter
-import java.time.{Duration, LocalDateTime}
+import java.time.{Duration, LocalDate, LocalDateTime}
 
 import com.archmage.jobsheetmaker.Tools
 import com.archmage.jobsheetmaker.model.WorkDay
@@ -11,9 +11,9 @@ import org.apache.pdfbox.pdmodel.PDDocument
 case class Job(client: Client, worker: Array[Worker], datetime: LocalDateTime, duration: Duration, services: String,
 	confirmed: String = "", comments: String = "", cancelled: Boolean = false) {
 
-	val date = datetime.toLocalDate
+	val date: LocalDate = datetime.toLocalDate
 
-	override def toString = {
+	override def toString: String = {
 		var status = if (cancelled) "[CANCELLED] " else ""
 		if (status == "" && confirmed == "") status += "[UNCONFIRMED] "
 		s"$status$date ${client.name} - ${worker(0)}, $services"
@@ -25,7 +25,7 @@ case class Job(client: Client, worker: Array[Worker], datetime: LocalDateTime, d
 		s"$hours:${if (minutes < 10) "0" else ""}$minutes"
 	}
 
-	def outputJobsheet = {
+	def outputJobsheet: PDDocument = {
 		val document = PDDocument.load(Job.template)
 		val acroForm = document.getDocumentCatalog.getAcroForm
 		val fieldNames = Array("Title", "Client", "Contact", "Confirmed", "Address", "Comments", "Duration")

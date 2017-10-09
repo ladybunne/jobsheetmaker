@@ -21,9 +21,9 @@ import javafx.scene.input.{KeyCode, KeyEvent, MouseEvent}
 import javafx.scene.{control => jfxsc}
 import javafx.stage.{DirectoryChooser, Modality, Stage}
 
-import com.archmage.jobsheetmaker.model.{JobReport, ModelF, SourceLoader, WorkDay}
+import com.archmage.jobsheetmaker.model.{ModelF, SourceLoader, WorkDay}
 
-import scala.collection.JavaConversions
+import scala.collection.JavaConverters
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -57,7 +57,7 @@ class Controller {
 
 	var customDirectory: File = new File(System.getProperty("user.home") + "/Downloads/")
 
-	val user = System.getProperty("user.name")
+	val user: String = System.getProperty("user.name")
 	val customDirFilename = s"options_$user.ini"
 
 	var stage: Stage = _
@@ -93,11 +93,11 @@ class Controller {
 	}
 
 	// attempts an unsafe operation, and handles it with a prompt on an error
-	def tryWithErrorPrompt = (task: () => Unit) => {
+	def tryWithErrorPrompt(task: () => Unit): Unit = {
 		try {
 			task.apply
 		} catch {
-			case ex: Throwable => {
+			case ex: Throwable =>
 				val alert = new Alert(AlertType.ERROR)
 				alert.setTitle("Error")
 				alert.setHeaderText(null)
@@ -118,7 +118,7 @@ class Controller {
 ${ex.getClass.getCanonicalName}: ${ex.getMessage}
 Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 				alert.showAndWait()
-			}
+
 		}
 	}
 
@@ -169,7 +169,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 				s"deleteInput=${menuOptionsDeleteInput.isSelected}",
 				s"preserveDuplicates=${menuOptionsPreserveDuplicates.isSelected}")
 
-			Files.write(Paths.get(customDirFilename), JavaConversions.asJavaIterable(output), Charset.forName("UTF-8"))
+			Files.write(Paths.get(customDirFilename), JavaConverters.asJavaIterable(output), Charset.forName("UTF-8"))
 			println("saved custom directory to file")
 		} else {
 			println("could not save custom directory to file")
@@ -177,7 +177,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 	}
 
 	// set custom directory
-	def setCustomDir(dir: File) = {
+	def setCustomDir(dir: File): Boolean = {
 		val exists = dir.exists && dir.isDirectory
 		if (exists) {
 			customDirectory = dir
@@ -239,8 +239,8 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 	}
 
 	// export all work days
-	def exportAllWorkDays(confirmDialog: Boolean) = {
-		tryWithErrorPrompt.apply(() => {
+	def exportAllWorkDays(confirmDialog: Boolean): Unit = {
+		tryWithErrorPrompt(() => {
 			val exportCountCache = model.exportCount()
 			doTaskWithProgress[WorkDay](
 				model.days, workDay => {
@@ -297,7 +297,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 	// update table
 	def updateTable(): Unit = {
 		Platform.runLater(() => {
-			tableFiles.setItems(FXCollections.observableList(JavaConversions.seqAsJavaList(model.days.toSeq)))
+			tableFiles.setItems(FXCollections.observableList(JavaConverters.seqAsJavaList(model.days.toSeq)))
 		})
 	}
 
@@ -305,7 +305,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 	def updateExportUI(): Unit = {
 		columnDuplicate.setVisible(menuOptionsPreserveDuplicates.isSelected)
 		if (model.exportCount() == 0) {
-			if (model.exportCount(true, outputDir) != 0) {
+			if (model.exportCount(duplicates = true, outputDir) != 0) {
 				// handle duplicates
 			}
 			buttonExport.setText("Export (0)")
@@ -333,7 +333,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 	@FXML def toggleExportOnAllSelectedRows(event: KeyEvent): Unit = {
 		if (event.getCode == KeyCode.SPACE) {
-			JavaConversions.asScalaBuffer(
+			JavaConverters.asScalaBuffer(
 				tableFiles.getSelectionModel.asInstanceOf[MultipleSelectionModel[WorkDay]].
 					getSelectedItems).foreach(workDay => workDay.export.setValue(!workDay.export.getValue))
 		}

@@ -6,7 +6,7 @@ import com.archmage.jobsheetmaker.model.cases.Job
 
 case class ModelF(loader: SourceLoader = SourceLoader(), days: Set[WorkDay] = Set(), jobs: Set[Job] = Set()) {
 
-  def exportCount(duplicates: Boolean = false, outputDir: File = null) = {
+  def exportCount(duplicates: Boolean = false, outputDir: File = null): Int = {
     days.count(d => {
       d.export.get && (!duplicates || d.checkExportExists(outputDir))
     })
