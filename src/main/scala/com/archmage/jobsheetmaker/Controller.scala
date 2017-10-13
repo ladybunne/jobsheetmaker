@@ -59,7 +59,7 @@ class Controller {
 	var customDirectory: File = new File(System.getProperty("user.home") + "/Downloads/")
 
 	val user: String = System.getProperty("user.name")
-	val customDirFilename = s"options_$user.ini"
+	val optionsFilepath = s"options_$user.ini"
 
 	val collator: Collator = Collator.getInstance(Locale.ENGLISH)
 
@@ -132,9 +132,9 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 	// load options from file
 	def loadOptions(): Unit = {
-		val customDirFile = new File(customDirFilename)
-		if (customDirFile.exists && !customDirFile.isDirectory) {
-			val in = new Scanner(new FileReader(customDirFile))
+		val optionsFile = new File(optionsFilepath)
+		if (optionsFile.exists && !optionsFile.isDirectory) {
+			val in = new Scanner(new FileReader(optionsFile))
 			var line = ""
 			while (in.hasNextLine) {
 				line = in.nextLine
@@ -163,7 +163,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 	// save options to file
 	def saveOptions(): Unit = {
-		val customDirFile = new File(customDirFilename)
+		val customDirFile = new File(optionsFilepath)
 		if (!customDirFile.exists() || customDirFile.canWrite) {
 			val output = ListBuffer(
 				"[Options]",
@@ -172,7 +172,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 				s"deleteInput=${menuOptionsDeleteInput.isSelected}",
 				s"preserveDuplicates=${menuOptionsPreserveDuplicates.isSelected}")
 
-			Files.write(Paths.get(customDirFilename), JavaConverters.asJavaIterable(output), Charset.forName("UTF-8"))
+			Files.write(Paths.get(optionsFilepath), JavaConverters.asJavaIterable(output), Charset.forName("UTF-8"))
 			println("saved custom directory to file")
 		} else {
 			println("could not save custom directory to file")
