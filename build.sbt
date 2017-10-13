@@ -2,8 +2,8 @@ lazy val root = (project in file(".")).
   settings(
     inThisBuild(List(
       organization := "com.archmage",
-      scalaVersion := "2.12.1",
-      version      := "1.5"
+      scalaVersion := "2.12.3",
+      version      := "1.6"
     )),
     name := "JobsheetMaker",
     fork := true,

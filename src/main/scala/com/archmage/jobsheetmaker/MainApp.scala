@@ -44,5 +44,5 @@ object MainApp {
 
 	var controller: Controller = _
 
-	val VERSION = "v1.5"
+	val VERSION = "v1.6"
 }
