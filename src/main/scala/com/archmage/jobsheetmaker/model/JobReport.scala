@@ -23,11 +23,13 @@ object JobReport {
 		"Clients Telephones", "Clients Mobiles", "Confirmed by:")
 
 	def validateFile(file: File): Boolean = {
-		if(!file.exists() || !file.canRead || !file.isDirectory) return false
-		if(file.getName.split(".").last != "xlsx") return false
+		if(!file.exists() || !file.canRead || file.isDirectory) return false
+		if(file.getName.split("\\.").last != "xlsx") return false
 		val fis = new FileInputStream(file)
 		val outcome = validateWorkbook(WorkbookFactory.create(fis))
 		fis.close()
+		if(!outcome) println(s"${file.getAbsolutePath} failed validation")
+		else println(s"${file.getAbsolutePath} passed validation")
 		outcome
 	}
 
@@ -36,6 +38,8 @@ object JobReport {
 	}
 
 	def validateWorkbook(row: Row): Boolean = {
+		// find out who's passing in a null row!
+		if(row == null) return false
 		// match column length
 		if(row.getLastCellNum != columns.length) return false
 		else for (cellIndex <- 0 until row.getLastCellNum) {

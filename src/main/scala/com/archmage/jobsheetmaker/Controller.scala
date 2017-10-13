@@ -4,9 +4,10 @@ import java.io._
 import java.lang.Boolean
 import java.nio.charset.Charset
 import java.nio.file.{Files, Paths}
+import java.text.Collator
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalDateTime}
-import java.util.Scanner
+import java.util.{Locale, Scanner}
 import javafx.application.Platform
 import javafx.beans.property.ReadOnlyObjectWrapper
 import javafx.beans.value.ObservableValue
@@ -21,7 +22,7 @@ import javafx.scene.input.{KeyCode, KeyEvent, MouseEvent}
 import javafx.scene.{control => jfxsc}
 import javafx.stage.{DirectoryChooser, Modality, Stage}
 
-import com.archmage.jobsheetmaker.model.{ModelF, SourceLoader, WorkDay}
+import com.archmage.jobsheetmaker.model.{Model, SourceLoader, WorkDay}
 
 import scala.collection.JavaConverters
 import scala.collection.mutable.ListBuffer
@@ -49,7 +50,7 @@ class Controller {
 	@FXML var menuOptionsPreserveDuplicates: jfxsc.CheckMenuItem = _
 
 	// -- variables for program logic --
-	var model = ModelF()
+	var model = Model()
 
 	val inputDir = new File("input")
 	val outputDir = new File("output")
@@ -59,6 +60,8 @@ class Controller {
 
 	val user: String = System.getProperty("user.name")
 	val customDirFilename = s"options_$user.ini"
+
+	val collator: Collator = Collator.getInstance(Locale.ENGLISH)
 
 	var stage: Stage = _
 
@@ -203,7 +206,7 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 	// prepare files for loading
 	def prepareFiles(): Unit = {
-		model = ModelF(
+		model = Model(
 			SourceLoader().
 				addDir(new File(".")).
 				addDir(new File("input")).
@@ -213,22 +216,28 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 	// load all prepared files
 	def loadPreparedFiles(completion: () => Unit): Unit = {
+		progressBar.setProgress(0)
+		progressBar.setStyle("")
+
 		val fileCount = model.loader.fileCount
 		val onEach = () => {
 			Platform.runLater(() => {
 				progressBar.setProgress(progressBar.getProgress + 1.0 / fileCount)
+				labelStatus.setText(s"Loaded file ${Math.round(progressBar.getProgress * fileCount).toInt} of $fileCount")
 			})
 		}
 
 		new Thread(() => {
-			val loaded = model.loadSourceFiles(onEach, completion)
-			model = ModelF(model.loader, loaded.days, loaded.jobs)
+			println(s"preparing to load ${model.loader.csvFiles.size} csv files and ${model.loader.xlsxFiles.size} xlsx files")
+			val loaded = model.loadSourceFiles(onEach)
+			model = Model(model.loader, loaded.days, loaded.jobs)
+			completion.apply()
 		}).start()
 	}
 
 	// cross-reference job objects with jobs in the job list
 	def crossReference(): Unit = {
-		model = ModelF(model.loader,
+		model = Model(model.loader,
 			model.days.map(d => WorkDay(d.worker, d.date, jobs = d.jobs.map(j => {
 				// get all equal jobs in model.jobs
 				val matches = model.jobs.filter(j2 => j2.checkEquality(j))
@@ -271,11 +280,15 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 	// prepare all file references, then load all files
 	def loadAll(): Unit = {
+		buttonRefresh.setDisable(true)
 		prepareFiles()
-		loadPreparedFiles(() => ())
-		crossReference()
-		updateTable()
-		updateExportUI()
+		loadPreparedFiles(() => Platform.runLater(() => {
+			crossReference()
+			updateTable()
+			setStatusUIDefault()
+			updateExportUI()
+			buttonRefresh.setDisable(false)
+		}))
 	}
 
 	// -- interface-modifying functions --
@@ -285,20 +298,19 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 		if (dayCount > 0) {
 			labelStatus.setText(s"$dayCount source file${if (dayCount != 1) "s" else ""} found, ${
 				model.days.size} jobsheet${if (model.days.size != 1) "s" else ""} loaded.")
-			progressBar.setStyle("-fx-accent: MediumSeaGreen")
 		}
 		else {
 			labelStatus.setText("Ready")
-			progressBar.setProgress(1)
-			progressBar.setStyle("")
 		}
 	}
 
 	// update table
 	def updateTable(): Unit = {
-		Platform.runLater(() => {
-			tableFiles.setItems(FXCollections.observableList(JavaConverters.seqAsJavaList(model.days.toSeq)))
+		val items = model.days.toSeq.sortWith((d1, d2) => {
+			if(d1.date == d2.date) collator.compare(d1.worker.name, d2.worker.name) == -1
+			else d1.date.toEpochDay > d2.date.toEpochDay
 		})
+		tableFiles.setItems(FXCollections.observableList(JavaConverters.seqAsJavaList(items)))
 	}
 
 	// update export button and label
@@ -360,6 +372,10 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 
 		menuOptionsPreserveDuplicates.setOnAction(_ => updateExportUI())
 
+		// disable input file deletion for now, the feature has regressed
+		menuOptionsDeleteInput.setDisable(true)
+
+		// threading to prevent file operations from blocking the main thread
 		new Thread(() => {
 			createProgramDirs()
 			loadOptions()
@@ -369,7 +385,5 @@ Please see the '${logFile.getName}` file in the 'logs' folder for more info.""")
 	}
 
 	@FXML
-	def exitApplication(event: ActionEvent) {
-		Platform.exit()
-	}
+	def exitApplication(event: ActionEvent): Unit = Platform.exit()
 }
