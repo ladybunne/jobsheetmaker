@@ -23,11 +23,13 @@ object JobReport {
 		"Clients Telephones", "Clients Mobiles", "Confirmed by:")
 
 	def validateFile(file: File): Boolean = {
-		if(!file.exists() || !file.canRead || !file.isDirectory) return false
-		if(file.getName.split(".").last != "xlsx") return false
+		if(!file.exists() || !file.canRead || file.isDirectory) return false
+		if(file.getName.split("\\.").last != "xlsx") return false
 		val fis = new FileInputStream(file)
 		val outcome = validateWorkbook(WorkbookFactory.create(fis))
 		fis.close()
+		if(!outcome) println(s"${file.getAbsolutePath} failed validation")
+		else println(s"${file.getAbsolutePath} passed validation")
 		outcome
 	}
 
@@ -36,19 +38,21 @@ object JobReport {
 	}
 
 	def validateWorkbook(row: Row): Boolean = {
+		// find out who's passing in a null row!
+		if(row == null) return false
 		// match column length
 		if(row.getLastCellNum != columns.length) return false
 		else for (cellIndex <- 0 until row.getLastCellNum) {
 			val cell = row.getCell(cellIndex)
 			cell.getCellTypeEnum match {
-				case CellType.STRING => {
+				case CellType.STRING =>
 					// match every single column value; this is inflexible by design
 					if(cell.getStringCellValue != columns(cellIndex)) return false
-				}
-				case _ => {
+
+				case _ =>
 					// no match means not valid
 					return false
-				}
+
 			}
 		}
 		true
@@ -113,7 +117,7 @@ object JobReport {
 				// start parsing cells
 				val datetime = LocalDateTime.parse(lines.head(1).substring(0, 19),
 					DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-				val client = new Client(lines.head(3), "", new Address(), "")
+				val client = Client(lines.head(3), "", Address(), "")
 				val duration = if (lines.head(1).isEmpty || lines.head(2).isEmpty ||
 					lines.head(1).length < stringLengthForDuration ||
 					lines.head(2).length < stringLengthForDuration) {
@@ -123,7 +127,7 @@ object JobReport {
 						LocalTime.parse(lines.head(1).substring(11, 19), DateTimeFormatter.ISO_LOCAL_TIME),
 						LocalTime.parse(lines.head(2).substring(11, 19), DateTimeFormatter.ISO_LOCAL_TIME)))
 				}
-				val job = Job(client, null, datetime, duration, "", "", lines.head(4).replaceAll("\n", "; "), false)
+				val job = Job(client, null, datetime, duration, "", "", lines.head(4).replaceAll("\n", "; "))
 				if(lines.tail.isEmpty) jobs + job
 				else parseLine(lines.tail, jobs + job)
 			}

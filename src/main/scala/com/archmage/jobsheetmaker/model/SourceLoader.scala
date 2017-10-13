@@ -23,7 +23,7 @@ case class SourceLoader(csvFiles: Set[File] = Set(), xlsxFiles: Set[File] = Set(
 
   def loadSingle(file: File): Option[WorkDay] = WorkDay.loadFromCSV(file)
 
-  def fileCount = csvFiles.size + xlsxFiles.size
+  def fileCount: Int = csvFiles.size + xlsxFiles.size
 }
 
 object SourceLoader {

@@ -8,7 +8,7 @@ object Tools {
 	def getFirstExistingStream(streams: InputStream*): InputStream = {
 		var output: InputStream = null
 		var existingFiles = streams.filter(stream => stream != null)
-		if (!existingFiles.isEmpty) output = existingFiles(0)
+		if(existingFiles.nonEmpty) output = existingFiles.head
 		output
 	}
 
