@@ -1,8 +1,8 @@
 package com.archmage.jobsheetmaker
 
-import javafx.application.Application
+import javafx.application.{Application, Platform}
 import javafx.fxml.FXMLLoader
-import javafx.scene.{ Scene, Parent }
+import javafx.scene.{Parent, Scene}
 import javafx.stage.Stage
 import java.io.File
 
@@ -30,6 +30,10 @@ class MainApp extends Application {
 		primaryStage.setTitle("JobsheetMaker " + MainApp.VERSION)
 		primaryStage.setScene(scene)
 		primaryStage.show()
+
+		if (getParameters.getRaw.contains("/quit")) {
+			Platform.exit()
+		}
 	}
 
 	override def stop(): Unit = {
