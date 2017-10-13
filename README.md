@@ -1,5 +1,5 @@
-# JobsheetMaker
-JobsheetMaker is a **customised CSV to PDF converter** that was originally developed to address a gap between a client's CRM features and their requirements. It was a project that was prototyped and pitched over around a week, then developed over two weeks and further supported over several months.
+# JobsheetMaker [![GitHub version](https://badge.fury.io/gh/archmage%2Fjobsheetmaker.svg)](https://badge.fury.io/gh/archmage%2Fjobsheetmaker) [![Build Status](https://travis-ci.org/archmage/jobsheetmaker.svg?branch=master)](https://travis-ci.org/archmage/jobsheetmaker)
+JobsheetMaker is a _customised CSV to PDF converter_ that was originally developed to address a gap between a client's CRM features and their requirements. It was a project that was prototyped and pitched over around a week, then developed over two weeks and further supported over several months.
 
 # Usage
 JobsheetMaker is specifically designed to be used with [Malinko](http://www.malinkoapp.com/), a CRM system. **JobsheetMaker's entire functionality is dependent on Malinko and its provision of services**, and if anything were to break on Malinko's end, JobsheetMaker cannot be held accountable.

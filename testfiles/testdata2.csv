@@ -1,0 +1,5 @@
+Start,End,Field Workers,Client,Contact,Address Line 1,Address Line 2,Address Line 3,Address Line 4,Address Line 5,Post Code,Site Telephone Number,Services,Event Charge,Client Group,Cancelled,Confirmed by:,Comments
+2017-01-16 09:00:00 UTC,2017-01-16 10:30:00 UTC,Stanley Workington,Sample Client,4444 4444,,4/12 Testing Street,,Testburg,NSW,4444,,Gardening,0,Central,No,Terri 2017-01-16,These are some sample comments. They will show up in the Comments field of the job.
+2017-01-16 11:00:00 UTC,2017-01-16 12:30:00 UTC,Stanley Workington,Another Client,0444 444 444,,111 Demonstration Avenue,,Exampleville,NSW,2145,,Gardening,0,Regional,No,Cassie 2017-01-12,Enter through the backyard gate. Beware of magpies.
+2017-01-16 13:00:00 UTC,2017-01-16 14:30:00 UTC,Stanley Workington,Testing Client,0444 444 445,,1 Sample Road,,Sampleton,NSW,8594,,Gardening,0,Western,No,Alan 2017-01-13,Leave invoice in the letterbox.
+2017-01-16 15:00:00 UTC,2017-01-16 16:30:00 UTC,Stanley Workington,Example Client,4444 4445,,46 Tutorial Lane,,Testburg,NSW,2213,,Gardening,0,Central,No,Alan 2017-01-14,Only mow the front lawn. Take extra care when doing the hedges.
