@@ -8,8 +8,9 @@ import com.archmage.jobsheetmaker.Tools
 import com.archmage.jobsheetmaker.model.WorkDay
 import org.apache.pdfbox.pdmodel.PDDocument
 
-case class Job(client: Client, worker: Array[Worker], datetime: LocalDateTime, duration: Duration, services: String,
-	confirmed: String = "", comments: String = "", cancelled: Boolean = false) {
+case class Job(client: Client = Client(), worker: Array[Worker] = Array(), datetime: LocalDateTime = LocalDateTime.MIN,
+	duration: Duration = Duration.ZERO, services: String = "", confirmed: String = "", comments: String = "",
+	cancelled: Boolean = false) {
 
 	val date: LocalDate = datetime.toLocalDate
 
