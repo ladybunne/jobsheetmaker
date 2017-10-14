@@ -20,8 +20,8 @@ import scala.collection.mutable.ListBuffer
 	* A day of work. Contains a worker, their jobs, the date of work and an optional source
 	* fileref for deleting.
 	*/
-case class WorkDay(worker: Worker, date: LocalDate, jobs: List[Job], source: File = null,
-	export: BooleanProperty = new SimpleBooleanProperty(true)) {
+case class WorkDay(worker: Worker = Worker(), date: LocalDate = LocalDate.MIN, jobs: List[Job] = List(),
+	source: File = null, export: BooleanProperty = new SimpleBooleanProperty(true)) {
 
 	def outputOverview: PDDocument = {
 		val document = PDDocument.load(WorkDay.template)
