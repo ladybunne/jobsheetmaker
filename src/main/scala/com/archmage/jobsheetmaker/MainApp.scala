@@ -42,11 +42,11 @@ class MainApp extends Application {
 }
 
 object MainApp {
-	def main(args: Array[String]) {
-		Application.launch(classOf[MainApp], args: _*)
-	}
-
 	var controller: Controller = _
 
 	val VERSION = "v1.6"
+
+	def main(args: Array[String]) {
+		Application.launch(classOf[MainApp], args: _*)
+	}
 }
