@@ -4,6 +4,8 @@ JobsheetMaker is a _customised CSV to PDF converter_ that was originally develop
 # Usage
 JobsheetMaker is specifically designed to be used with [Malinko](http://www.malinkoapp.com/), a CRM system. **JobsheetMaker's entire functionality is dependent on Malinko and its provision of services**, and if anything were to break on Malinko's end, JobsheetMaker cannot be held accountable.
 
+To start using JobsheetMaker, go to the Releases page, download the provided JAR file with the latest release, place it somewhere, and run it!
+
 Users typically download CSV files for each Field Worker within Malinko, then run JobsheetMaker to load each CSV file. From there they can manage the PDF files that will be exported, using features such as checking against duplicates, selectively exporting, and deleting input files upon a successful export. A button is provided within the interface to view the export directory.
 
 # Custom Templates
